@@ -71,6 +71,7 @@ protected:
     Get_name         = 5,
     Query_log_name   = 6,
     Add_image_info   = 7,
+    Log_names        = 8,
     Obj_info         = 16,
   };
 

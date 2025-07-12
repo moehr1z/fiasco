@@ -71,6 +71,10 @@ public:
     Tbuf_log_3val  = 4,
     Tbuf_log_bin   = 5,
 
+    Tbuf_size      = 0x20,
+    Tbuf_map       = 0x21,
+    Tbuf_entries   = 0x22,
+
     // 0x500 prefix for dump opcodes
     Dump_kmem_stats = 0,
   };
@@ -104,12 +108,16 @@ Jdb_object::sys_kobject_debug(L4_msg_tag tag, unsigned /* op */,
 //----------------------------------------------------------------------------
 IMPLEMENTATION [rt_dbg && debug]:
 
+#include "arithmetic.h"
+#include "mem_layout.h"
+#include "minmax.h"
+
 PRIVATE inline NOEXPORT
 L4_msg_tag
 Jdb_object::sys_tbuf(L4_msg_tag tag, unsigned op,
                      L4_fpage::Rights,
                      Syscall_frame *,
-                     Utcb const *r_msg, Utcb *)
+                     Utcb const *r_msg, Utcb *s_msg)
 {
   Thread *curr = current_thread();
   switch (op)
@@ -198,6 +206,65 @@ Jdb_object::sys_tbuf(L4_msg_tag tag, unsigned op,
         Jdb_tbuf::commit_entry(tb);
         return commit_result(0);
       }
+
+    case Tbuf_size:
+      s_msg->values[0] = Jdb_tbuf::size();
+      return commit_result(0);
+
+    case Tbuf_map:
+      {
+#if 0
+        static_assert(cxx::log2u(Mem_layout::Tbuf_buffer_area)
+                      >= Config::SUPERPAGE_SHIFT);
+        static_assert(cxx::log2u(Mem_layout::Tbuf_buffer_size)
+                      >= Config::SUPERPAGE_SHIFT);
+#endif
+
+        if (tag.words() < 3)
+          return commit_result(-L4_err::EMsgtooshort);
+
+        Address offset = access_once(&r_msg->values[1]);
+        if (offset >= Jdb_tbuf::size())
+          return commit_result(-L4_err::ENomem);
+
+        L4_fpage fp(access_once(&r_msg->values[2]));
+        if (!fp.is_valid() || !fp.is_mempage())
+          return commit_result(-L4_err::EInval);
+        if (fp.order() < Config::PAGE_SHIFT)
+          return commit_result(-L4_err::EInval);
+
+        Mword size = 1UL << fp.order();
+        if (fp.mem_address() > Virt_addr(Mem_layout::User_max - size + 1))
+          return commit_result(-L4_err::EInval);
+        if (offset + size > Jdb_tbuf::size())
+          return commit_result(-L4_err::ENomem);
+
+        Mem_space *space = curr->space();
+        Virt_addr kern_va(Jdb_tbuf::buffer());
+        Virt_addr user_va(fp.mem_address());
+        // Currently the tracebuffer contains of single pages allocated with
+        // Vmem_alloc::page_alloc(). This has to change to reduce TLB footprint.
+        Mem_space::Page_order order(min<int>(Config::PAGE_SHIFT, fp.order()));
+        constexpr auto attr(Mem_space::Attr::space_local(L4_fpage::Rights::URW()));
+
+        for (Virt_size i(0); i < Virt_size(size); i += Virt_size(1) << order)
+          {
+            Mem_space::Phys_addr pa(Kmem::kdir->virt_to_phys(
+                                      cxx::int_value<Virt_addr>(kern_va + i)));
+            Mem_space::Status res = space->v_insert(pa, user_va + i, order, attr);
+            if (res != Mem_space::Insert_ok)
+              return commit_result(-L4_err::ENomem);
+          }
+
+        if constexpr (Mem_space::Need_insert_tlb_flush)
+          space->tlb_flush_all_cpus();
+
+        return commit_result(0);
+      }
+
+    case Tbuf_entries:
+      s_msg->values[0] = Jdb_tbuf::unfiltered_entries();
+      return commit_result(0);
 
     default:
       return commit_result(-L4_err::ENosys);

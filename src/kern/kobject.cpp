@@ -430,6 +430,16 @@ protected:
     void print(String_buffer *buf) const;
   };
   static_assert(sizeof(Log_destroy) <= Tb_entry::Tb_entry_size);
+
+public:
+  struct Log_name : public Tb_entry
+  {
+    Kobject    *obj;
+    Mword      id;
+    char       name[32];
+    void set_name(char const *str, size_t size);
+    void print(String_buffer *buf) const;
+  };
 };
 
 //---------------------------------------------------------------------------
@@ -443,6 +453,23 @@ Kobject::Log_destroy::print(String_buffer *buf) const
 {
   buf->printf("obj=%lx [%p] (%p) ram=%lx", id, static_cast<void const *>(type),
               static_cast<void *>(obj), ram);
+}
+
+IMPLEMENT
+void
+Kobject::Log_name::set_name(char const *str, size_t size)
+{
+  size_t i;
+  for (i = 0; i < sizeof(name)-1 && i < size && str[i] != '\0'; ++i)
+    name[i] = str[i];
+  name[i] = '\0';
+}
+
+IMPLEMENT
+void
+Kobject::Log_name::print(String_buffer *buf) const
+{
+  buf->printf("obj=%lx (%p) '%s'", id, static_cast<void *>(obj), name);
 }
 
 //---------------------------------------------------------------------------

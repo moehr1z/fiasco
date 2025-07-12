@@ -104,8 +104,15 @@ Jdb_name_hdl::invoke(Kobject_common *o, Syscall_frame *f, Utcb *utcb) override
           }
 
         if (f->tag().words() > 0)
-          ne->name(reinterpret_cast<char const *>(&utcb->values[1]),
-                   (f->tag().words() - 1) * sizeof(Mword));
+          {
+            char const *str = reinterpret_cast<char const *>(&utcb->values[1]);
+            size_t size = (f->tag().words() - 1) * sizeof(Mword);
+            ne->name(str, size);
+            LOG_TRACE("Kobject names", "nam", current(), Kobject::Log_name,
+                l->id = o->dbg_info()->dbg_id();
+                l->obj = Kobject::from_dbg(o->dbg_info());
+                l->set_name(str, size));
+          }
         if (enqueue)
           o->dbg_info()->_jdb_data.add(ne);
         f->tag(Kobject_iface::commit_result(0));
@@ -120,7 +127,8 @@ Jdb_name_hdl::invoke(Kobject_common *o, Syscall_frame *f, Utcb *utcb) override
             return true;
           }
         Jdb_kobject_name *n =
-          Jdb_kobject_extension::find_extension<Jdb_kobject_name>(Kobject::from_dbg(o));
+          Jdb_kobject_extension::find_extension<Jdb_kobject_name>(
+                                                    Kobject::from_dbg(o));
         if (!n)
           {
             f->tag(Kobject_iface::commit_result(-L4_err::ENoent));
@@ -136,6 +144,19 @@ Jdb_name_hdl::invoke(Kobject_common *o, Syscall_frame *f, Utcb *utcb) override
                                                 / sizeof(Mword)));
         return true;
       }
+    case Op::Log_names:
+      for (auto const &o : Kobject_dbg::_kobjects)
+        {
+          Jdb_kobject_name *n =
+            Jdb_kobject_extension::find_extension<Jdb_kobject_name>(
+                                                                    Kobject::from_dbg(o));
+          LOG_TRACE("Kobject names", "nam", current(), Kobject::Log_name,
+                    l->id = o->dbg_id();
+                    l->obj = Kobject::from_dbg(o);
+                    if (n)
+                    l->set_name(n->name(), n->max_len()));
+        }
+      return true;
     default:
       break;
     }

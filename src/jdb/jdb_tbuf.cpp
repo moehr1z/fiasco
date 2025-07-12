@@ -79,7 +79,7 @@ static void direct_log_dummy(Tb_entry*, const char*)
 void (*Jdb_tbuf::direct_log_entry)(Tb_entry*, const char*) = &direct_log_dummy;
 
 PUBLIC static inline Tracebuffer_status *Jdb_tbuf::status() { return _status; }
-PROTECTED static inline Tb_entry_union *Jdb_tbuf::buffer() { return _buffer; }
+PUBLIC static inline Tb_entry_union *Jdb_tbuf::buffer() { return _buffer; }
 PUBLIC static inline Address Jdb_tbuf::size() { return _size; }
 
 /** Clear tracebuffer. */
