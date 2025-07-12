@@ -185,7 +185,8 @@ Factory::kinvoke(L4_obj_ref ref, L4_fpage::Rights rights, Syscall_frame *f,
     l->buffer = buffer.obj_index();
     l->id = dbg_info()->dbg_id();
     l->ram = current();
-    l->newo = new_o ? new_o->dbg_info()->dbg_id() : ~0);
+    l->newo = new_o ? new_o->dbg_info()->dbg_id() : ~0;
+    l->obj = Kobject::from_dbg(new_o->dbg_info()));
 
   if (new_o)
     {
@@ -242,6 +243,7 @@ private:
     Mword id;
     Mword ram;
     Mword newo;
+    Kobject* obj;
     void print(String_buffer *buf) const;
   };
   static_assert(sizeof(Log_entry) <= Tb_entry::Tb_entry_size);
