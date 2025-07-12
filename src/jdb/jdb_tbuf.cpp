@@ -228,6 +228,28 @@ Jdb_tbuf::lookup(Mword look_idx)
     }
 }
 
+/** Return offset of tracebuffer event, which was last committed. */
+PUBLIC static 
+Mword
+Jdb_tbuf::last_committed() {
+  Tb_entry *e = unfiltered_lookup(0);
+  if (!e) {
+    return 0;
+  }
+
+  // Spin until it is committed
+  while (e->number() >= _number) {
+    Mem::barrier();
+    Proc::pause();
+  } 
+
+  Tb_entry_union* base = Jdb_tbuf::buffer();
+  Mword offset = 0;
+  offset = reinterpret_cast<Mword>(e) - reinterpret_cast<Mword>(base);
+  return offset;
+}
+
+
 PUBLIC static
 Mword
 Jdb_tbuf::unfiltered_idx(Tb_entry const *e)

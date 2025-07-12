@@ -74,6 +74,7 @@ public:
     Tbuf_size      = 0x20,
     Tbuf_map       = 0x21,
     Tbuf_entries   = 0x22,
+    Tbuf_last_committed   = 0x23,
 
     // 0x500 prefix for dump opcodes
     Dump_kmem_stats = 0,
@@ -265,6 +266,12 @@ Jdb_object::sys_tbuf(L4_msg_tag tag, unsigned op,
     case Tbuf_entries:
       s_msg->values[0] = Jdb_tbuf::unfiltered_entries();
       return commit_result(0);
+
+    case Tbuf_last_committed:
+      {
+        s_msg->values[0] = Jdb_tbuf::last_committed();
+        return commit_result(0);
+      }
 
     default:
       return commit_result(-L4_err::ENosys);
