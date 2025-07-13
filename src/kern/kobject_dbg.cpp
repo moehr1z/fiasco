@@ -1,4 +1,5 @@
 //----------------------------------------------------------------------------
+#include "types-arch.h"
 INTERFACE[rt_dbg]:
 
 #include "spin_lock.h"
@@ -56,8 +57,11 @@ public:
   static Iterator begin() { return _kobjects->begin(); }
   static Iterator end() { return _kobjects->end(); }
 
+
 private:
   static Global_data<unsigned long> _next_dbg_id;
+  static Global_data<unsigned long> _streamer_id;
+  static Global_data<unsigned long> _vio_switch_id;
 };
 
 //----------------------------------------------------------------------------
@@ -79,6 +83,24 @@ IMPLEMENTATION[rt_dbg]:
 DEFINE_GLOBAL_PRIO(BOOTSTRAP_INIT_PRIO) Global_data<Spin_lock<>> Kobject_dbg::_kobjects_lock;
 DEFINE_GLOBAL_PRIO(BOOTSTRAP_INIT_PRIO) Global_data<Kobject_dbg::Kobject_list> Kobject_dbg::_kobjects;
 DEFINE_GLOBAL Global_data<unsigned long> Kobject_dbg::_next_dbg_id;
+DEFINE_GLOBAL Global_data<unsigned long> Kobject_dbg::_streamer_id;
+DEFINE_GLOBAL Global_data<unsigned long> Kobject_dbg::_vio_switch_id;
+
+PUBLIC static inline 
+void 
+Kobject_dbg::set_streamer_id(Unsigned64 id) { _streamer_id = id; }
+
+PUBLIC static inline 
+void 
+Kobject_dbg::set_vio_switch_id(Unsigned64 id) { _vio_switch_id = id; }
+
+PUBLIC static inline 
+unsigned long 
+Kobject_dbg::streamer_id() { return _streamer_id; }
+
+PUBLIC static inline 
+unsigned long 
+Kobject_dbg::vio_switch_id() { return _vio_switch_id; }
 
 IMPLEMENT inline Kobject_dbg::Dbg_extension::~Dbg_extension() {}
 

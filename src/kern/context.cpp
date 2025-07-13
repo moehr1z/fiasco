@@ -484,6 +484,7 @@ IMPLEMENTATION:
 #include "thread_state.h"
 #include "timer.h"
 #include "timeout.h"
+#include "task.h"
 
 DEFINE_PER_CPU Per_cpu<Clock> Context::_clock(Per_cpu_data::Cpu_num);
 DEFINE_PER_CPU Per_cpu<Context *> Context::_kernel_ctxt;

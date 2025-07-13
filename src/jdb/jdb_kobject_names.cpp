@@ -1,4 +1,6 @@
 //-----------------------------------------------------------------------
+#include "kobject_dbg.h"
+#include "types-arch.h"
 INTERFACE:
 
 #include "config.h"
@@ -112,6 +114,16 @@ Jdb_name_hdl::invoke(Kobject_common *o, Syscall_frame *f, Utcb *utcb) override
                 l->id = o->dbg_info()->dbg_id();
                 l->obj = Kobject::from_dbg(o->dbg_info());
                 l->set_name(str, size));
+
+            // if the object is the task of the trace streamer or the vio switch, remember its id
+            if (cxx::dyn_cast<Task *>(Kobject::from_dbg(o->dbg_info()))) {
+              Unsigned64 id = o->dbg_info()->dbg_id();
+              if (strstr(ne->name(), "trace-stream") != NULL) {
+                  Kobject_dbg::set_streamer_id(id);
+              } else if (strstr(ne->name(), "l4vio_switch") != NULL) {
+                  Kobject_dbg::set_vio_switch_id(id);
+              }
+            }
           }
         if (enqueue)
           o->dbg_info()->_jdb_data.add(ne);

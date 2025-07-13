@@ -34,6 +34,7 @@
 
 #else
 
+
 #include "globals.h"
 #include "jdb_tbuf.h"
 #include "processor.h"
@@ -53,7 +54,17 @@
   LOG_TRACE_COND(name, sc, ctx, fmt, true, __VA_ARGS__)
 
 #define LOG_CONTEXT_SWITCH                                              \
-  LOG_TRACE("Context switch", "csw", this, Tb_entry_ctx_sw,             \
+  LOG_TRACE_COND("Context switch", "csw", this, Tb_entry_ctx_sw,        \
+    ([this, t]() {                                                      \
+      auto src = static_cast<Task*>(this->space())->dbg_id();           \
+      auto dst = static_cast<Task*>(t->space())->dbg_id();              \
+      auto sid = Kobject_dbg::streamer_id();                            \
+      auto vid = Kobject_dbg::vio_switch_id();                          \
+      return !((src == sid && dst == vid) ||                            \
+              (src == vid && dst == sid) ||                             \
+              (src == vid && dst == vid) ||                             \
+              (src == sid && dst == sid));                              \
+    })(),                                                               \
     Sched_context *cs = Sched_context::rq.current().current_sched();    \
     l->from_space = space();                                            \
     l->_ip = regs()->ip_syscall_user();                                 \

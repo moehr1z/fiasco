@@ -1,3 +1,4 @@
+#include "auto/kobject_dbg.h"
 IMPLEMENTATION [log]:
 
 #include <cstring>
@@ -24,11 +25,18 @@ IMPLEMENT void FIASCO_FLATTEN sys_ipc_log_wrapper()
   Unsigned8 have_snd       = ipc_regs->ref().op() & L4_obj_ref::Ipc_send;
   Utcb *utcb = curr->utcb().access(true);
   Task *curr_task = static_cast<Task*>(curr->space());
+
+  unsigned long id = curr_task->dbg_id();
+  unsigned long streamer_id = Kobject_dbg::streamer_id();
+  unsigned long vio_switch_id = Kobject_dbg::vio_switch_id();
+  bool is_streamer_or_vio = (id == streamer_id) || (id == vio_switch_id);
+
   int do_log = Jdb_ipc_trace::log()
                && Jdb_ipc_trace::check_restriction(curr->dbg_id(),
                                                    curr_task->dbg_id(),
                                                    ipc_regs, 0)
-               && ipc_regs->tag().proto() != L4_msg_tag::Label_debugger;
+               && ipc_regs->tag().proto() != L4_msg_tag::Label_debugger
+               && (!is_streamer_or_vio);
 
   if (do_log)
     {
