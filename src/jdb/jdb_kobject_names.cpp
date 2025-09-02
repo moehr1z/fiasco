@@ -8,6 +8,7 @@ INTERFACE:
 #include "l4_types.h"
 #include "initcalls.h"
 #include "global_data.h"
+#include "ipc_gate.h"
 
 
 class Jdb_kobject_name : public Jdb_kobject_extension
@@ -110,9 +111,17 @@ Jdb_name_hdl::invoke(Kobject_common *o, Syscall_frame *f, Utcb *utcb) override
             char const *str = reinterpret_cast<char const *>(&utcb->values[1]);
             size_t size = (f->tag().words() - 1) * sizeof(Mword);
             ne->name(str, size);
+            
+            Ipc_gate_obj* gate = cxx::dyn_cast<Ipc_gate_obj *>(Kobject::from_dbg(o->dbg_info()));
+            Thread* thread = nullptr;
+            if (gate != nullptr) {
+              thread = gate->thread();
+            }
+            
             LOG_TRACE("Kobject names", "nam", current(), Kobject::Log_name,
                 l->id = o->dbg_info()->dbg_id();
                 l->obj = Kobject::from_dbg(o->dbg_info());
+                l->thread = (Kobject*) thread;
                 l->set_name(str, size));
 
             // if the object is the task of the trace streamer or the vio switch, remember its id
@@ -162,9 +171,16 @@ Jdb_name_hdl::invoke(Kobject_common *o, Syscall_frame *f, Utcb *utcb) override
           Jdb_kobject_name *n =
             Jdb_kobject_extension::find_extension<Jdb_kobject_name>(
                                                                     Kobject::from_dbg(o));
+                                                                    
+          Ipc_gate_obj* gate = cxx::dyn_cast<Ipc_gate_obj *>(Kobject::from_dbg(o));
+          Thread* thread = nullptr;
+          if (gate != nullptr) {
+            thread = gate->thread();
+          }
           LOG_TRACE("Kobject names", "nam", current(), Kobject::Log_name,
                     l->id = o->dbg_id();
                     l->obj = Kobject::from_dbg(o);
+                    l->thread = (Kobject*) thread;
                     if (n)
                     l->set_name(n->name(), n->max_len()));
         }

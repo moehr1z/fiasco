@@ -435,6 +435,7 @@ public:
   struct Log_name : public Tb_entry
   {
     Kobject    *obj;
+    Kobject    *thread;
     Mword      id;
     char       name[32];
     void set_name(char const *str, size_t size);
